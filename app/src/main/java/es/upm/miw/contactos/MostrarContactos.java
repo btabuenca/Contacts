@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -17,6 +18,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 import static android.provider.ContactsContract.Contacts;
 
@@ -105,7 +107,8 @@ public class MostrarContactos extends AppCompatActivity {
         listView = (ListView) findViewById(R.id.listadoContactos);
 
         // cargar lista de contactos
-        contactos = cargarDatos();
+        //contactos = cargarDatos();
+        contactos = cargarDatosDetalle();
 
         // crear adaptador y enchufarlo al listView
         ArrayAdapter adaptador = new ArrayAdapter<String>(
@@ -130,6 +133,8 @@ public class MostrarContactos extends AppCompatActivity {
         // Obtener content resolver y recuperar contactos
         ContentResolver cr = getContentResolver();
         String ordenacion = Contacts.DISPLAY_NAME_PRIMARY + " ASC";     // display_name ASC
+
+
         Cursor cursor = cr.query(URI_Contactos, null, null, null, ordenacion);
         Log.i(LOG_TAG, "Número contactos=" + Integer.toString(cursor.getCount()));
 
@@ -138,6 +143,7 @@ public class MostrarContactos extends AppCompatActivity {
             while (!cursor.isAfterLast()) {
                 String namePrimary =
                         cursor.getString(cursor.getColumnIndex(Contacts.DISPLAY_NAME_PRIMARY));
+
                 listaContactos.add(namePrimary);
                 Log.i(LOG_TAG, "Contacto: " + namePrimary);
                 cursor.moveToNext();
@@ -147,4 +153,55 @@ public class MostrarContactos extends AppCompatActivity {
 
         return listaContactos;
     }
+
+
+    /**
+     * Crea una lista con los nombres de los contactos
+     * @return Lista de contactos
+     */
+    public ArrayList<String> cargarDatosDetalle() {
+
+        ArrayList<String> emlRecs = new ArrayList<String>();
+        HashSet<String> emlRecsHS = new HashSet<String>();
+
+        ContentResolver cr = getContentResolver();
+
+        String[] PROJECTION = new String[] {
+                ContactsContract.RawContacts._ID,
+                ContactsContract.Contacts.DISPLAY_NAME,
+                ContactsContract.Contacts.PHOTO_ID,
+                ContactsContract.CommonDataKinds.Email.DATA,
+                ContactsContract.CommonDataKinds.Photo.CONTACT_ID };
+
+
+        String order = "CASE WHEN "
+                + ContactsContract.Contacts.DISPLAY_NAME
+                + " NOT LIKE '%@%' THEN 1 ELSE 2 END, "
+                + ContactsContract.Contacts.DISPLAY_NAME
+                + ", "
+                + ContactsContract.CommonDataKinds.Email.DATA
+                + " COLLATE NOCASE";
+
+        String filter = ContactsContract.CommonDataKinds.Email.DATA + " NOT LIKE ''";
+
+        Cursor cur = cr.query(ContactsContract.CommonDataKinds.Email.CONTENT_URI, PROJECTION, filter, null, order);
+        if (cur.moveToFirst()) {
+            do {
+                // names comes in hand sometimes
+                String name = cur.getString(1);
+                String emlAddr = cur.getString(3);
+
+                // keep unique only
+                if (emlRecsHS.add(emlAddr.toLowerCase())) {
+                    emlRecs.add(name + " | " + emlAddr);
+                }
+            } while (cur.moveToNext());
+        }
+
+        cur.close();
+
+
+        return emlRecs;
+    }
+
 }
