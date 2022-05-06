@@ -25,8 +25,8 @@ import static android.provider.ContactsContract.Contacts;
 public class MostrarContactos extends AppCompatActivity {
 
     private ListView listView;
-    private ArrayList<String> contactos;
-    private final String LOG_TAG = "MiW"; // Etiqueta para filtrar logs
+    private ArrayList<String> alStrContactos;
+    private final String LOG_TAG = "bta"; // Etiqueta para filtrar logs
 
     Context context;
 
@@ -41,14 +41,11 @@ public class MostrarContactos extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.layout_mostrar_contactos);
-
+        setContentView(R.layout.mostrar_contactos);
 
         if (CheckPermission(MostrarContactos.this, permissons[0])) {
             // you have permission go ahead
             listarContactos();
-
-
         } else {
             // you do not have permission go request runtime permissions
             RequestPermission(MostrarContactos.this, permissons, REQUEST_RUNTIME_PERMISSION);
@@ -91,11 +88,9 @@ public class MostrarContactos extends AppCompatActivity {
         if (ContextCompat.checkSelfPermission(thisActivity,
                 Permission[0])
                 != PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(thisActivity,
-                    Permission[0])) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(thisActivity, Permission[0])) {
             } else {
-                ActivityCompat.requestPermissions(thisActivity, Permission,
-                        Code);
+                ActivityCompat.requestPermissions(thisActivity, Permission, Code);
             }
         }
     }
@@ -107,14 +102,16 @@ public class MostrarContactos extends AppCompatActivity {
         listView = (ListView) findViewById(R.id.listadoContactos);
 
         // cargar lista de contactos
-        //contactos = cargarDatos();
-        contactos = cargarDatosDetalle();
+        alStrContactos = cargarDatos();
+
+        // descomentar para obtner más detalles de los contactos y utilizando filtro
+        //alStrContactos = cargarDatosDetalle();
 
         // crear adaptador y enchufarlo al listView
         ArrayAdapter adaptador = new ArrayAdapter<String>(
                 this,
-                R.layout.layout_contacto,
-                contactos
+                R.layout.row_contacto,
+                alStrContactos
         );
         listView.setAdapter(adaptador);
     }
@@ -156,7 +153,7 @@ public class MostrarContactos extends AppCompatActivity {
 
 
     /**
-     * Crea una lista con los nombres de los contactos
+     * Crea una lista con los nombres | emails | de los contactos que tengan registrado email
      * @return Lista de contactos
      */
     public ArrayList<String> cargarDatosDetalle() {
@@ -193,7 +190,7 @@ public class MostrarContactos extends AppCompatActivity {
 
                 // keep unique only
                 if (emlRecsHS.add(emlAddr.toLowerCase())) {
-                    emlRecs.add(name + " | " + emlAddr);
+                    emlRecs.add(name + " | " + emlAddr + " | ");
                 }
             } while (cur.moveToNext());
         }

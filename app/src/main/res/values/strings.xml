@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">Contactos</string>
-    <string name="titulo">Contactos</string>
+    <string name="titulo">Agenda obtenida via content provider</string>
 </resources>
