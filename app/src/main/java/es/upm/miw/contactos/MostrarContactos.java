@@ -4,7 +4,9 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ProviderInfo;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -36,8 +38,6 @@ public class MostrarContactos extends AppCompatActivity {
             Manifest.permission.WRITE_CONTACTS};
 
 
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,9 +50,6 @@ public class MostrarContactos extends AppCompatActivity {
             // you do not have permission go request runtime permissions
             RequestPermission(MostrarContactos.this, permissons, REQUEST_RUNTIME_PERMISSION);
         }
-
-
-
     }
 
     public boolean CheckPermission(Context context, String Permission) {
@@ -101,11 +98,24 @@ public class MostrarContactos extends AppCompatActivity {
 
         listView = (ListView) findViewById(R.id.listadoContactos);
 
+
+        // List available providers on device
+        for (PackageInfo pack : getPackageManager().getInstalledPackages(PackageManager.GET_PROVIDERS)) {
+            ProviderInfo[] providers = pack.providers;
+            if (providers != null) {
+                for (ProviderInfo provider : providers) {
+                    Log.i(LOG_TAG, "provider: " + provider.authority);
+                }
+            }
+        }
+
+
+
         // cargar lista de contactos
-        alStrContactos = cargarDatos();
+        //alStrContactos = cargarDatos();
 
         // descomentar para obtner más detalles de los contactos y utilizando filtro
-        //alStrContactos = cargarDatosDetalle();
+        alStrContactos = cargarDatosDetalle();
 
         // crear adaptador y enchufarlo al listView
         ArrayAdapter adaptador = new ArrayAdapter<String>(
@@ -129,23 +139,23 @@ public class MostrarContactos extends AppCompatActivity {
 
         // Obtener content resolver y recuperar contactos
         ContentResolver cr = getContentResolver();
-        String ordenacion = Contacts.DISPLAY_NAME_PRIMARY + " ASC";     // display_name ASC
+        String ORDER = Contacts.DISPLAY_NAME_PRIMARY + " ASC";     // display_name ASC
 
 
-        Cursor cursor = cr.query(URI_Contactos, null, null, null, ordenacion);
-        Log.i(LOG_TAG, "Número contactos=" + Integer.toString(cursor.getCount()));
+        Cursor CURSOR = cr.query(URI_Contactos, null, null, null, ORDER);
+        Log.i(LOG_TAG, "Número contactos=" + Integer.toString(CURSOR.getCount()));
 
         // Si hay datos -> cargar en la lista
-        if (cursor.moveToFirst()) {
-            while (!cursor.isAfterLast()) {
+        if (CURSOR.moveToFirst()) {
+            while (!CURSOR.isAfterLast()) {
                 String namePrimary =
-                        cursor.getString(cursor.getColumnIndex(Contacts.DISPLAY_NAME_PRIMARY));
+                        CURSOR.getString(CURSOR.getColumnIndex(Contacts.DISPLAY_NAME_PRIMARY));
 
                 listaContactos.add(namePrimary);
                 Log.i(LOG_TAG, "Contacto: " + namePrimary);
-                cursor.moveToNext();
+                CURSOR.moveToNext();
             }
-            cursor.close();  // liberar recursos
+            CURSOR.close();  // liberar recursos
         }
 
         return listaContactos;
@@ -171,7 +181,7 @@ public class MostrarContactos extends AppCompatActivity {
                 ContactsContract.CommonDataKinds.Photo.CONTACT_ID };
 
 
-        String order = "CASE WHEN "
+        String ORDER = "CASE WHEN "
                 + ContactsContract.Contacts.DISPLAY_NAME
                 + " NOT LIKE '%@%' THEN 1 ELSE 2 END, "
                 + ContactsContract.Contacts.DISPLAY_NAME
@@ -179,23 +189,25 @@ public class MostrarContactos extends AppCompatActivity {
                 + ContactsContract.CommonDataKinds.Email.DATA
                 + " COLLATE NOCASE";
 
-        String filter = ContactsContract.CommonDataKinds.Email.DATA + " NOT LIKE ''";
+        String FILTER = ContactsContract.CommonDataKinds.Email.DATA + " NOT LIKE ''";
 
-        Cursor cur = cr.query(ContactsContract.CommonDataKinds.Email.CONTENT_URI, PROJECTION, filter, null, order);
-        if (cur.moveToFirst()) {
+
+        Cursor CURSOR = cr.query(ContactsContract.CommonDataKinds.Email.CONTENT_URI, PROJECTION, FILTER, null, ORDER);
+        Log.i(LOG_TAG, "Detalle. Número contactos=" + Integer.toString(CURSOR.getCount()));
+        if (CURSOR.moveToFirst()) {
             do {
                 // names comes in hand sometimes
-                String name = cur.getString(1);
-                String emlAddr = cur.getString(3);
+                String name = CURSOR.getString(1);
+                String emlAddr = CURSOR.getString(3);
 
                 // keep unique only
                 if (emlRecsHS.add(emlAddr.toLowerCase())) {
                     emlRecs.add(name + " | " + emlAddr + " | ");
                 }
-            } while (cur.moveToNext());
+            } while (CURSOR.moveToNext());
         }
 
-        cur.close();
+        CURSOR.close();
 
 
         return emlRecs;
